@@ -1,0 +1,38 @@
+name: ECLAIR Analysis
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Run ECLAIR analysis
+      id: run-analyze
+      uses: BUGSENG/zephyr-workbench-eclair-tools/cli@main
+      with:
+        project-dir: './example-project'
+        board: 'native_sim'
+        #config: 'Application Only'
+        #venv-path: '.venv'
+        verbose: 'true'
+        dry-run: 'true'
+
+    - name: Show SCA output dir
+      run: echo "sca-dir=${{ steps.run-analyze.outputs.sca-dir }}"
+
+    - name: Upload ECLAIR database
+      uses: actions/upload-artifact@v4
+      with:
+        name: eclair-report
+        path: ${{ steps.run-analyze.outputs.sca-dir }}/PROJECT.ecd

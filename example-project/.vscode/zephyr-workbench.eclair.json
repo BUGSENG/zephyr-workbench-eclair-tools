@@ -1,0 +1,130 @@
+{
+  "configs": [
+    {
+      "name": "Application Only",
+      "description_md": "A lightweight coding standard based on a selection of MISRA-C:2025 rules.",
+      "main_config": {
+        "type": "preset",
+        "rulesets": [
+          {
+            "source": {
+              "type": "repo-path",
+              "repo": "BUGSENG presets",
+              "path": "rulesets/MC4-STU.ecl"
+            }
+          }
+        ],
+        "variants": [
+          {
+            "source": {
+              "type": "repo-path",
+              "repo": "BUGSENG presets",
+              "path": "variants/application.ecl"
+            }
+          }
+        ],
+        "tailorings": [
+          {
+            "source": {
+              "type": "repo-path",
+              "repo": "BUGSENG presets",
+              "path": "tailorings/application.ecl"
+            }
+          }
+        ]
+      },
+      "reports": [
+        "ALL"
+      ]
+    },
+    {
+      "name": "Full Project",
+      "description_md": "Full project analysis (including the Zephyr kernel) of a coding standard based on MISRA-C:2025.",
+      "main_config": {
+        "type": "preset",
+        "rulesets": [
+          {
+            "source": {
+              "type": "repo-path",
+              "repo": "BUGSENG presets",
+              "path": "rulesets/MC4.ecl"
+            },
+            "edited_flags": {}
+          }
+        ],
+        "variants": [
+          {
+            "source": {
+              "type": "repo-path",
+              "repo": "BUGSENG presets",
+              "path": "variants/application.ecl"
+            },
+            "edited_flags": {
+              "exclude-external-reports": false,
+              "exclude-external-frames": false,
+              "exclude-external-files": false
+            }
+          }
+        ],
+        "tailorings": [
+          {
+            "source": {
+              "type": "repo-path",
+              "repo": "BUGSENG presets",
+              "path": "tailorings/application.ecl"
+            },
+            "edited_flags": {}
+          }
+        ]
+      },
+      "reports": [
+        "ALL"
+      ]
+    },
+    {
+      "name": "BARR-C Stylistic",
+      "description_md": "Configuration to enforce a selection of the BARR-C:2018 stylistic guidelines.",
+      "main_config": {
+        "type": "preset",
+        "rulesets": [
+          {
+            "source": {
+              "type": "repo-path",
+              "repo": "BUGSENG presets",
+              "path": "rulesets/NC3-sel.ecl"
+            }
+          }
+        ],
+        "variants": [
+          {
+            "source": {
+              "type": "repo-path",
+              "repo": "BUGSENG presets",
+              "path": "variants/application.ecl"
+            }
+          }
+        ],
+        "tailorings": [
+          {
+            "source": {
+              "type": "repo-path",
+              "repo": "BUGSENG presets",
+              "path": "tailorings/application.ecl"
+            }
+          }
+        ]
+      },
+      "reports": [
+        "ALL"
+      ]
+    }
+  ],
+  "current_config_index": 0,
+  "repos": {
+    "BUGSENG presets": {
+      "origin": "https://github.com/BUGSENG/zephyr-workbench-eclair-presets",
+      "ref": "main",
+      "rev": "c7cd79316a145b07da3ad8babb56405f8dd8cba4"
+    }
+  }
+}

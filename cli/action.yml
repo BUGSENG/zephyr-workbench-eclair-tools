@@ -1,0 +1,115 @@
+name: 'ECLAIR Analyze'
+description: 'Run an ECLAIR analysis on a Zephyr project folder'
+author: 'BUGSENG'
+
+inputs:
+  project-dir:
+    description: 'Path to the Zephyr application directory (must contain .vscode/zephyr-workbench.eclair.json)'
+    required: true
+  board:
+    description: 'Target board (e.g. native_sim, nrf52840dk/nrf52840)'
+    required: true
+  config:
+    description: 'SCA config name to use (defaults to current_config_index)'
+    required: false
+    default: ''
+  build-dir:
+    description: 'Override the west build output directory'
+    required: false
+    default: ''
+  venv-path:
+    description: 'Path to a Python virtual environment to activate before running (e.g. .venv or ../.venv)'
+    required: false
+    default: ''
+  dry-run:
+    description: 'Print the west command without executing it'
+    required: false
+    default: 'false'
+  verbose:
+    description: 'Enable verbose output'
+    required: false
+    default: 'false'
+
+outputs:
+  sca-dir:
+    description: 'Path to the ECLAIR SCA output directory (build/sca/eclair), usable for artifact uploads'
+    value: ${{ steps.run-analyze.outputs.sca-dir }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Prepare CLI workspace
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        CLI_WORKDIR="${RUNNER_TEMP}/zw-eclair-cli"
+        rm -rf "$CLI_WORKDIR"
+        mkdir -p "$CLI_WORKDIR"
+
+        cp -R "$GITHUB_ACTION_PATH/." "$CLI_WORKDIR/"
+
+        cd "$CLI_WORKDIR"
+        npm ci
+        npm run build
+
+        echo "ZW_CLI_WORKDIR=$CLI_WORKDIR" >> "$GITHUB_ENV"
+
+    - name: Run analyze
+      id: run-analyze
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        CLI_DIR="${ZW_CLI_WORKDIR:-${RUNNER_TEMP}/zw-eclair-cli}"
+        cd "$CLI_DIR"
+
+        WORKSPACE="${GITHUB_WORKSPACE:-${{ github.workspace }}}"
+
+        # Activate venv if provided
+        if [ -n "${{ inputs.venv-path }}" ]; then
+          VENV_PATH="${{ inputs.venv-path }}"
+          if [[ "$VENV_PATH" != /* ]]; then
+            VENV_PATH="$WORKSPACE/$VENV_PATH"
+          fi
+          if [ ! -f "$VENV_PATH/bin/activate" ]; then
+            echo "::error::Python virtual environment not found at $VENV_PATH"
+            ls -al "$WORKSPACE"/.. || true
+            exit 1
+          fi
+          source "$VENV_PATH/bin/activate"
+        fi
+
+        # Resolve project-dir relative to the caller's workspace, not the action path
+        PROJECT_DIR="${{ inputs.project-dir }}"
+        if [[ "$PROJECT_DIR" != /* ]]; then
+          PROJECT_DIR="$WORKSPACE/$PROJECT_DIR"
+        fi
+
+        # Temp file to receive the SCA dir path from the CLI
+        SCA_DIR_OUTPUT_FILE="$(mktemp)"
+
+        ARGS=("analyze" "$PROJECT_DIR" "--board" "${{ inputs.board }}" "--sca-dir-output" "$SCA_DIR_OUTPUT_FILE")
+
+        if [ -n "${{ inputs.config }}" ]; then
+          ARGS+=("--config" "${{ inputs.config }}")
+        fi
+        if [ -n "${{ inputs.build-dir }}" ]; then
+          BUILD_DIR="${{ inputs.build-dir }}"
+          if [[ "$BUILD_DIR" != /* ]]; then
+            BUILD_DIR="$WORKSPACE/$BUILD_DIR"
+          fi
+          ARGS+=("--build-dir" "$BUILD_DIR")
+        fi
+        if [ "${{ inputs.dry-run }}" = "true" ]; then
+          ARGS+=("--dry-run")
+        fi
+        if [ "${{ inputs.verbose }}" = "true" ]; then
+          ARGS+=("--verbose")
+        fi
+
+        node dist/index.js "${ARGS[@]}"
+
+        # Expose the SCA dir as a step output
+        SCA_DIR="$(cat "$SCA_DIR_OUTPUT_FILE")"
+        echo "sca-dir=$SCA_DIR" >> "$GITHUB_OUTPUT"
